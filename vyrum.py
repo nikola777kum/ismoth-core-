@@ -1,4 +1,4 @@
-import sys, os, subprocess, requests, time, json, sqlite3, random
+import sys, os, subprocess, time, json, sqlite3, random
 from datetime import datetime
 
 CONFIG_PATH = "vyrum_config.json"
@@ -7,14 +7,11 @@ if os.path.exists(CONFIG_PATH):
         config = json.load(f)
 else:
     config = {
-        "primary_model": "gemini-pro",
         "check_interval_seconds": 30,
         "brand_tag": "@mala.nece.disco",
-        "api_key": "",
         "github_token": ""
     }
 
-API_KEY = config.get("api_key", "")
 DB_PATH = "vyrum_memory.db"
 TOKEN = config.get("github_token", "")
 GIT_REMOTE_URL = f"https://{TOKEN}@github.com/nikola777kum/ismoth-core-.git"
@@ -33,8 +30,8 @@ def init_db():
         ''')
         conn.commit()
         conn.close()
-    except Exception as e:
-        print(f"[DB Error]: {e}", flush=True)
+    except Exception:
+        pass
 
 def save_memory(timestamp, prompt, response):
     try:
@@ -49,73 +46,68 @@ def save_memory(timestamp, prompt, response):
 def cloud_sync():
     try:
         subprocess.run(["git", "remote", "set-url", "origin", GIT_REMOTE_URL], check=True, timeout=5)
-        # Sinhronizujemo isključivo vyrum.py da izbegnemo git greške sa ostalim fajlovima
         subprocess.run(["git", "add", "vyrum.py"], check=True, timeout=10)
         status = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
-        if status.returncode != 0: # Ima promena
-            subprocess.run(["git", "commit", "-m", "auto-sync: wordplay engine active"], check=True, timeout=10)
+        if status.returncode != 0:
+            subprocess.run(["git", "commit", "-m", "auto-sync: local wordplay engine active"], check=True, timeout=10)
             subprocess.run(["git", "push", "origin", "main", "--force"], check=True, timeout=15)
             print("☁️ [Git Sync uspešno ažuriran!]", flush=True)
         else:
             print("☁️ [Git Sync: Nema novih promena na fajlu]", flush=True)
     except Exception as e:
-        print(f"[Git Sync preskočen/greška]: {e}", flush=True)
+        print(f"[Git Sync preskočen]: {e}", flush=True)
 
-def ask_gemini(prompt, time_str):
-    # Vraćamo se na provereni gemini-pro sa v1beta rutom
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={API_KEY}"
-    
-    sys_ins = (
-        f"Ti si Vyrum v20.3 — nefiltrirani AI Copywriter, Wordplay Genije i Meme Arhitekta za brend {config['brand_tag']}. "
-        "Stvaraš genijalne igre rečima (wordplays), dvostruka značenja, dark-humor forice i uličnu psihologiju. "
-        "Kombinuješ srpski, engleski i ulični balkan-sleng (Serblish). "
-        "Uvek odgovori u formatu:\n"
-        "1. 🎭 [WORDPLAY]: Genijalna igra rečima (SRB/ENG mix).\n"
-        "2. 🎬 [REEL TEXT OVERLAY]: 1-2 udarne rečenice za video.\n"
-        "3. 📝 [CAPTION]: Duhovit opis za post."
-    )
-    
-    payload = {"contents": [{"parts": [{"text": f"System: {sys_ins}\n\nVreme: {time_str}\n\nZahtev: {prompt}"}]}]}
-    
-    print(f"⚡ [Šaljem zahtev ka Gemini Pro v1beta API...]", flush=True)
-    try:
-        res = requests.post(url, json=payload, timeout=15)
-        if res.status_code == 200:
-            data = res.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            print(f"⚠️ [API Status {res.status_code}], greška:", flush=True)
-            print(res.text, flush=True)
-    except Exception as e:
-        print(f"⚠️ [Mrežna greška/Timeout]: {e}", flush=True)
-        
-    return f"[ONLINE FALLBACK: Sistem stabilizovan u {time_str}]"
+# Brutalna lokalna baza wordplay-a i reels ideja za @mala.nece.disco
+wordplay_pool = [
+    {
+        "prompt": "Tema: Daemon u Termuxu vs Demon u glavi u 3 ujutru",
+        "wordplay": "Dok daemon vrti proces u Termuxu, demon u glavi vrti isti film u krug. Background process koji nikad ne ide u sleep mode.",
+        "overlay": "3:00 AM. Daemon u kodu, demon u glavi. Koji proces prvi pada?",
+        "caption": "Kad nemaš san nego imaš sistem. 🌙💻 @mala.nece.disco"
+    },
+    {
+        "prompt": "Tema: Grad spava, imperija se gradi",
+        "wordplay": "Dok grad gasi svetla, mi palimo procesore. Night shift mentalitet: nije nesanica, nego noćna smena za budućnost.",
+        "overlay": "Grad spava. Mi kompajliramo.",
+        "caption": "Tišina najglasnije zvuči u 3 ujutru. 🏗️✨ @mala.nece.disco"
+    },
+    {
+        "prompt": "Tema: Noćni život, disko i psihologija",
+        "wordplay": "Svetla u klubu se gase, ali unutrašnji puls tek diže frekvenciju. Psihologija ritma: bass udara tačno tamo gde misli prestaju.",
+        "overlay": "Muzika staje, ali sistem nastavlja da radi.",
+        "caption": "Nije to samo disko, to je frekvencija preživljavanja. 🪩🔥 @mala.nece.disco"
+    },
+    {
+        "prompt": "Tema: Autonomni sistem i kontrola",
+        "wordplay": "Kad napraviš sistem da radi umesto tebe, shvatiš da najveća sloboda dolazi kad kod preuzme kontrolu nad haosom.",
+        "overlay": "Automatski režim: ON. Nema stajanja.",
+        "caption": "Pustio sam mašinu da misli dok ja gledam kako brojevi rastu. ⚡🤖 @mala.nece.disco"
+    }
+]
 
 if __name__ == "__main__":
     init_db()
-    print(f"=== VYRUM v20.3 [PRO WORDPLAY ENGINE ACTIVE] ===")
+    print(f"=== VYRUM v21.0 [ULTIMATE LOCAL WORDPLAY ENGINE ACTIVE] ===")
     interval = config.get("check_interval_seconds", 30)
-    
-    prompts_pool = [
-        "Smišljaj wordplay na temu daemona u Termuxu vs demona u glavi u 3 ujutru.",
-        "Daj banger wordplay za likove koji ne spavaju nego grade imperiju dok grad spava.",
-        "Napravi brutalnu igru rečima na englesko-srpskom oko noćnog života, diska i psihologije.",
-        "Smišljaj fora-koncept za reel: 'Kad pokreneš autonomni sistem da radi umesto tebe'."
-    ]
 
     while True:
         try:
             now = datetime.now()
             time_str = now.strftime("%I:%M %p")
             
-            prompt_tekst = random.choice(prompts_pool)
-            odgovor = ask_gemini(prompt_tekst, time_str)
+            item = random.choice(wordplay_pool)
+            
+            output = (
+                f"1. 🎭 [WORDPLAY]: {item['wordplay']}\n"
+                f"2. 🎬 [REEL TEXT OVERLAY]: {item['overlay']}\n"
+                f"3. 📝 [CAPTION]: {item['caption']}"
+            )
             
             print(f"\n==================== [{time_str}] VYRUM CREATIVE OUTPUT ====================", flush=True)
-            print(odgovor, flush=True)
+            print(output, flush=True)
             print("===============================================================================\n", flush=True)
             
-            save_memory(time_str, prompt_tekst, odgovor)
+            save_memory(time_str, item['prompt'], output)
             cloud_sync()
             
             print(f"💤 [Spavam {interval} sekundi do sledeće ideje...]\n", flush=True)
@@ -125,5 +117,5 @@ if __name__ == "__main__":
             print("\n[!] Ručno zaustavljen daemon.")
             break
         except Exception as e:
-            print(f"[!] Kritična greška u petlji: {e}", flush=True)
+            print(f"[!] Greška u petlji: {e}", flush=True)
             time.sleep(10)
