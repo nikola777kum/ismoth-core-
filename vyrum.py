@@ -14,7 +14,6 @@ DB_PATH = "vyrum_memory.db"
 TOKEN = config.get("github_token", "")
 GIT_REMOTE_URL = f"https://{TOKEN}@github.com/nikola777kum/ismoth-core-.git"
 
-# Pamćenje istorije razgovora da model "uči" i prati kontekst u toku sesije
 chat_history = []
 
 def init_db():
@@ -39,14 +38,14 @@ def cloud_sync():
         subprocess.run(["git", "add", "vyrum.py"], check=True, timeout=10)
         status = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if status.returncode != 0:
-            subprocess.run(["git", "commit", "-m", "auto-sync: AI chat partner active"], check=True, timeout=10)
+            subprocess.run(["git", "commit", "-m", "auto-sync: fixed api route"], check=True, timeout=10)
             subprocess.run(["git", "push", "origin", "main", "--force"], check=True, timeout=15)
     except Exception: pass
 
 def ask_gemini_chat(user_input):
     global chat_history
-    # Koristimo stabilnu v1beta rutu sa modelom koji podržava generisanje
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # Ispravljena ruta na model koji provereno prima generisanje na v1beta
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
     
     system_instruction = (
         f"Ti si inteligentni AI partner i ulični saputnik za brend {config['brand_tag']}. "
@@ -54,7 +53,6 @@ def ask_gemini_chat(user_input):
         "reels, wordplay i strategiju, i učiš iz razgovora sa korisnikom. Budi direktan, oštar i koristan."
     )
     
-    # Dodajemo novu poruku u istoriju
     chat_history.append({"role": "user", "parts": [{"text": user_input}]})
     
     payload = {
@@ -67,17 +65,16 @@ def ask_gemini_chat(user_input):
         if res.status_code == 200:
             data = res.json()
             reply = data["candidates"][0]["content"]["parts"][0]["text"]
-            # Zabeleži i odgovor modela u istoriju radi konteksta (učenja)
             chat_history.append({"role": "model", "parts": [{"text": reply}]})
             return reply
         else:
-            return f"[Greška API-ja: {res.status_code} - Proveri API ključ u fajlu]"
+            return f"[API Greška {res.status_code}]: Proveri da li ti je tačan API ključ u vyrum_config.json fajlu."
     except Exception as e:
         return f"[Mrežna greška: {e}]"
 
 if __name__ == "__main__":
     init_db()
-    print("=== VYRUM v24.0 [ŽIVI AI PARTNER & LEARNING ENGINE] ===\n")
+    print("=== VYRUM v24.1 [FIXED API CHAT ENGINE] ===\n")
     print("Baci poruku, pričamo normalno. Kucaj 'exit' za izlaz.\n")
 
     while True:
@@ -88,8 +85,6 @@ if __name__ == "__main__":
                 break
                 
             time_str = datetime.now().strftime("%I:%M %p")
-            
-            # Pozivamo pravog AI partnera
             response_text = ask_gemini_chat(user_input)
             
             print(f"\n{response_text}\n")
