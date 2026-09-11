@@ -48,7 +48,7 @@ def cloud_sync():
         subprocess.run(["git", "add", "vyrum.py"], check=True, timeout=10)
         status = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if status.returncode != 0:
-            subprocess.run(["git", "commit", "-m", "auto-sync: clean interactive fix"], check=True, timeout=10)
+            subprocess.run(["git", "commit", "-m", "auto-sync: zivi ortak active"], check=True, timeout=10)
             subprocess.run(["git", "push", "origin", "main", "--force"], check=True, timeout=15)
             print("☁️ [Git Sync uspešno ažuriran!]")
         else:
@@ -56,47 +56,52 @@ def cloud_sync():
     except Exception as e:
         print(f"[Git Sync preskočen]: {e}")
 
+# Pravi živi ortak generator – prepoznaje kontekst i vadi bager fore
 def generate_output(user_input):
     inp = user_input.strip()
-    up = inp.upper()
+    lower_inp = inp.lower()
     
-    styles = [
-        {
-            "wordplay": f"Kad {inp} uđe u sistem, frekvencija se menja. Nije ovo običan ritam, ovo je takt koji preživljava noć.",
-            "overlay": f"{up} // Udar u centar.",
-            "caption": f"Sve je rečeno u jednoj reči. ⚡ {config['brand_tag']}"
-        },
-        {
-            "wordplay": f"Tražiš {inp}? Dok oni spavaju, mi kompajliramo značenje iza svakog koraka na betonu.",
-            "overlay": f"BEZ GREŠKE: {up}",
-            "caption": f"Ulična psihologija i noćni program. 🪩🔥 {config['brand_tag']}"
-        },
-        {
-            "wordplay": f"Igra reči: {inp} nije opcija, {inp} je protokol koji se izvršava bez prava na žalbu.",
-            "overlay": f"STATUS: {up} ACTIVE",
-            "caption": f"Sistem drži konce u svojim rukama. 🌙💻 {config['brand_tag']}"
-        }
-    ]
-    
-    item = random.choice(styles)
-    
+    # Baza pametnih odgovora baziranih na rečima koje uneseš
+    if "gde si" in lower_inp or "alo" in lower_inp or "brat" in lower_inp:
+        wordplay = f"Tu sam, brate moj, ne mrdam iz sistema. Dok grad spava, frekvencija radi pun gas."
+        overlay = f"ŽIVI ORTAK // Nema spavanja."
+        caption = f"Sistem je stabilan, ulica pamti sve. ⚡ {config['brand_tag']}"
+    elif "disco" in lower_inp or "disko" in lower_inp or "klub" in lower_inp:
+        wordplay = f"Svetla se gase, ali bas udara u glavu. Kad {inp} krene, nema povratka nazad."
+        overlay = f"BASS U GLAVU // {inp.upper()}"
+        caption = f"Noćni program za odabrane. 🪩🔥 {config['brand_tag']}"
+    else:
+        wordplay = f"Analiziram temu '{inp}': Ulica kaže jedno, kod kaže drugo, ali istina je negde između 3 ujutru i sledećeg beata."
+        overlay = f"PROTOKOL: {inp.upper()}"
+        caption = f"Fokus je oštar, igra je počela. 🌙💻 {config['brand_tag']}"
+        
     return (
-        f"1. 🎭 [WORDPLAY]: {item['wordplay']}\n"
-        f"2. 🎬 [REEL TEXT OVERLAY]: {item['overlay']}\n"
-        f"3. 📝 [CAPTION]: {item['caption']}"
+        f"1. 🎭 [WORDPLAY]: {wordplay}\n"
+        f"2. 🎬 [REEL TEXT OVERLAY]: {overlay}\n"
+        f"3. 📝 [CAPTION]: {caption}"
     )
 
 if __name__ == "__main__":
     init_db()
-    print("=== VYRUM v22.2 [CLEAN INTERACTIVE ENGINE] ===")
-    print("Kucaj temu, reč ili misao, a za izlaz stisni Enter na prazno ili kucaj 'exit'.\n")
+    print("=== VYRUM v23.0 [ŽIVI ORTAK INTERAKTIVNI MOD] ===")
+    print("Baci temu ili baci kosku, a za izlaz kucaj 'exit'.\n")
 
     while True:
         try:
-            user_input = input("💬 [Tebe čujem] > ").strip()
+            user_input = input("💬 [Živi ortak sluša] > ").strip()
             if not user_input or user_input.lower() in ["exit", "kraj", "quit"]:
-                print("\n[!] Gasimo interaktivnu konzolu. Vidimo se!")
+                print("\n[!] Ćao, brate! Gasim mašinu.")
                 break
+                
+            # Žongliranje žargonom dok „razmišlja“
+            razmislja_faze = [
+                "Vrtim baksuzne frekvencije... 🔄",
+                "Kompajliram u glavi, sekund... 🧠",
+                "Prebiram po betonu i bitovima... ⚡",
+                "Tražim žicu, sačekaj sekund... 🎧"
+            ]
+            print(f"[{random.choice(razmislja_faze)}]")
+            time.sleep(1)
                 
             time_str = datetime.now().strftime("%I:%M %p")
             output = generate_output(user_input)
