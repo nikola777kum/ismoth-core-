@@ -50,10 +50,9 @@ def cloud_sync():
     try:
         subprocess.run(["git", "remote", "set-url", "origin", GIT_REMOTE_URL], check=True, timeout=5)
         subprocess.run(["git", "add", "vyrum.py"], check=True, timeout=10)
-        # Proveravamo da li ima promena pre commita da ne puca grešku
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, timeout=5)
         if status.stdout.strip():
-            subprocess.run(["git", "commit", "-m", "auto-sync: flash v20.1 wordplay active"], check=True, timeout=10)
+            subprocess.run(["git", "commit", "-m", "auto-sync: flash v20.2 wordplay active"], check=True, timeout=10)
             subprocess.run(["git", "push", "origin", "main", "--force"], check=True, timeout=15)
             print("☁️ [Git Sync uspešno ažuriran!]", flush=True)
         else:
@@ -65,7 +64,7 @@ def ask_gemini(prompt, time_str):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     sys_ins = (
-        f"Ti si Vyrum v20.1 — nefiltrirani AI Copywriter, Wordplay Genije i Meme Arhitekta za brend {config['brand_tag']}. "
+        f"Ti si Vyrum v20.2 — nefiltrirani AI Copywriter, Wordplay Genije i Meme Arhitekta za brend {config['brand_tag']}. "
         "Stvaraš genijalne igre rečima (wordplays), dvostruka značenja, dark-humor forice i uličnu psihologiju. "
         "Kombinuješ srpski, engleski i ulični balkan-sleng (Serblish). "
         "Uvek odgovori u formatu:\n"
@@ -92,7 +91,7 @@ def ask_gemini(prompt, time_str):
 
 if __name__ == "__main__":
     init_db()
-    print(f"=== VYRUM v20.1 [FLASH WORDPLAY ENGINE ACTIVE] ===")
+    print(f"=== VYRUM v20.2 [FLASH WORDPLAY ENGINE ACTIVE] ===")
     interval = config.get("check_interval_seconds", 30)
     
     prompts_pool = [
