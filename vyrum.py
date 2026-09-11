@@ -1,4 +1,4 @@
-import sys, os, subprocess, requests, time, json, sqlite3
+import sys, os, subprocess, requests, time, json, sqlite3, random
 from datetime import datetime
 
 CONFIG_PATH = "vyrum_config.json"
@@ -7,7 +7,7 @@ if os.path.exists(CONFIG_PATH):
         config = json.load(f)
 else:
     config = {
-        "primary_model": "gemini-pro",
+        "primary_model": "gemini-1.5-flash",
         "check_interval_seconds": 30,
         "brand_tag": "@mala.nece.disco",
         "api_key": "",
@@ -49,36 +49,41 @@ def save_memory(timestamp, prompt, response):
 def cloud_sync():
     try:
         subprocess.run(["git", "remote", "set-url", "origin", GIT_REMOTE_URL], check=True, timeout=5)
-        subprocess.run(["git", "add", "vyrum.py", ".gitignore"], check=True, timeout=10)
-        subprocess.run(["git", "commit", "-m", "auto-sync: vyrum v20.0 wordplay engine active"], check=True, timeout=10)
-        subprocess.run(["git", "push", "origin", "main", "--force"], check=True, timeout=15)
-        print("☁️ [Git Sync uspešno završen!]", flush=True)
+        subprocess.run(["git", "add", "vyrum.py"], check=True, timeout=10)
+        # Proveravamo da li ima promena pre commita da ne puca grešku
+        status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, timeout=5)
+        if status.stdout.strip():
+            subprocess.run(["git", "commit", "-m", "auto-sync: flash v20.1 wordplay active"], check=True, timeout=10)
+            subprocess.run(["git", "push", "origin", "main", "--force"], check=True, timeout=15)
+            print("☁️ [Git Sync uspešno ažuriran!]", flush=True)
+        else:
+            print("☁️ [Git Sync: Nema novih promena za slanje]", flush=True)
     except Exception as e:
         print(f"[Git Sync preskočen/greška]: {e}", flush=True)
 
 def ask_gemini(prompt, time_str):
-    url = f"https://generativelanguage.googleapis.com/v1/models/{config['primary_model']}:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     sys_ins = (
-        f"Ti si Vyrum v20.0 — nefiltrirani AI Copywriter, Wordplay Genije i Meme Arhitekta za brend {config['brand_tag']}. "
-        "Tvok cilj je stvaranje genijalnih igara rečima (wordplays), dvostrukih značenja, dark-humor fora i ulične psihologije. "
+        f"Ti si Vyrum v20.1 — nefiltrirani AI Copywriter, Wordplay Genije i Meme Arhitekta za brend {config['brand_tag']}. "
+        "Stvaraš genijalne igre rečima (wordplays), dvostruka značenja, dark-humor forice i uličnu psihologiju. "
         "Kombinuješ srpski, engleski i ulični balkan-sleng (Serblish). "
-        "Svaki tvoj odgovor mora sadržati:\n"
-        "1. 🎭 [WORDPLAY / REČ NIVA]: Genijalna igra rečima ili dvostruka poenta (SRB/ENG mix).\n"
-        "2. 🎬 [REEL TEXT OVERLAY]: 1-2 brutalne rečenice koje idu preko videa za Reel.\n"
-        "3. 📝 [CAPTION & HOOK]: Izazovan i duhovit opis za post koji tera ljude da komentarišu."
+        "Uvek odgovori u formatu:\n"
+        "1. 🎭 [WORDPLAY]: Genijalna igra rečima (SRB/ENG mix).\n"
+        "2. 🎬 [REEL TEXT OVERLAY]: 1-2 udarne rečenice za video.\n"
+        "3. 📝 [CAPTION]: Duhovit opis za post."
     )
     
     payload = {"contents": [{"parts": [{"text": f"System: {sys_ins}\n\nVreme: {time_str}\n\nZahtev: {prompt}"}]}]}
     
-    print(f"⚡ [Vyrum Wordplay Engine stvara za {config['brand_tag']}...]", flush=True)
+    print(f"⚡ [Šaljem zahtev ka Gemini 1.5 Flash API...]", flush=True)
     try:
         res = requests.post(url, json=payload, timeout=15)
         if res.status_code == 200:
             data = res.json()
             return data["candidates"][0]["content"]["parts"][0]["text"]
         else:
-            print(f"⚠️ [API Status {res.status_code}], prebacujem na fallback...", flush=True)
+            print(f"⚠️ [API Status {res.status_code}], greška:", flush=True)
             print(res.text, flush=True)
     except Exception as e:
         print(f"⚠️ [Mrežna greška/Timeout]: {e}", flush=True)
@@ -87,17 +92,15 @@ def ask_gemini(prompt, time_str):
 
 if __name__ == "__main__":
     init_db()
-    print(f"=== VYRUM v20.0 [WORDPLAY & WRITER EXPERT ACTIVE] ===")
+    print(f"=== VYRUM v20.1 [FLASH WORDPLAY ENGINE ACTIVE] ===")
     interval = config.get("check_interval_seconds", 30)
     
     prompts_pool = [
-        "Smišljaj wordplay na temu daemona na telefonu vs demona u glavi u 3 ujutru.",
-        "Daj banger wordplay za likove koji ne spavaju nego planiraju imperiju dok grad spava.",
+        "Smišljaj wordplay na temu daemona u Termuxu vs demona u glavi u 3 ujutru.",
+        "Daj banger wordplay za likove koji ne spavaju nego grade imperiju dok grad spava.",
         "Napravi brutalnu igru rečima na englesko-srpskom oko noćnog života, diska i psihologije.",
-        "Smišljaj fora-koncept za reel: 'Kad ti devojka kaže da izabereš ili ona ili tvoji projekti'."
+        "Smišljaj fora-koncept za reel: 'Kad pokreneš autonomni sistem da radi umesto tebe'."
     ]
-    
-    import random
 
     while True:
         try:
